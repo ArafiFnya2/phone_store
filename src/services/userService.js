@@ -1,3 +1,4 @@
+// ...existing code...
 import { pool } from "../config/db.js";
 import { ResponseError } from "../errors/responseError.js";
 
@@ -40,4 +41,55 @@ export const createUser = async (user) => {
 
   const insertedId = result.insertId;
   return await getUserById(insertedId); 
+};
+
+// ...existing code...
+
+// add updateUser function
+export const updateUser = async (id, user) => {
+  const allowed = [
+    "fullname",
+    "username",
+    "email",
+    "role",
+    "address",
+    "phone_number",
+    "age",
+  ];
+
+  const fields = [];
+  const values = [];
+
+  for (const key of allowed) {
+    if (Object.prototype.hasOwnProperty.call(user, key)) {
+      fields.push(`${key} = ?`);
+      values.push(user[key]);
+    }
+  }
+
+  if (fields.length === 0) {
+    throw new ResponseError(400, "No fields provided to update");
+  }
+
+  values.push(id);
+
+  const [result] = await pool.query(
+    `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
+    values
+  );
+
+  if (result.affectedRows === 0) {
+    throw new ResponseError(404, "User not found");
+  }
+
+  return await getUserById(id);
+};
+export const deleteUser = async (id) => {
+  const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+
+  if (result.affectedRows === 0) {
+    throw new ResponseError(404, "User not found");
+  }
+
+  return { message: "User deleted" };
 };
